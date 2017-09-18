@@ -4,7 +4,7 @@ Plugin Name: WPStackPro
 Plugin URI: https://wpstackpro.com
 Description: WordPress plugin that serves as a framework to quickly build products
 Author: Ashfame
-Version: 0.1.2
+Version: 0.1.3
 Author URI: https://ashfame.com/
 */
 
@@ -120,15 +120,46 @@ class WPStackPro {
 			}
 		} );
 
-		// Add body class in admin as per user roles
+		// Add body class in admin as per user roles + customer_designation metric
 		add_filter( 'admin_body_class', function( $css_classes ) {
 			$current_user = wp_get_current_user();
 			foreach ( $current_user->roles as $role ) {
-				$css_classes .= ' useris-' . $role;
+				$css_classes .= ' user-is-' . $role;
+			}
+
+			$customer_designation = get_user_meta( $current_user->ID, 'customer_designation', true );
+			if ( $customer_designation ) {
+				$css_classes .= ' customer-is-' . $customer_designation;
 			}
 
 			return $css_classes;
 		} );
+
+		// Show some message on login page + fill out email in login form, if available
+		add_action( 'login_init', function() {
+			if ( isset( $_REQUEST[ 'ux-message' ] ) ) {
+				?>
+				<script>
+					setTimeout( function() {
+						alert( '<?php echo $_REQUEST[ 'ux-message' ]; ?>' );
+					}, 1000 );
+				</script>
+				<?php
+			}
+
+			if ( isset( $_REQUEST[ 'ux-email' ] ) ) {
+				?>
+				<script>
+					setTimeout( function() {
+						document.getElementById( 'user_login' ).value = '<?php echo $_REQUEST[ 'ux-email' ] ?>';
+					}, 1 );
+				</script>
+				<?php
+			}
+		} );
+
+		// Add dashboard widgets
+		add_action( 'wp_dashboard_setup', array( $this, 'add_dashboard_widgets' ) );
 
 		// Ajax handlers
 		add_action( 'wp_ajax_nopriv_feature_tasting', array( $this, 'feature_tasting' ) );
@@ -137,34 +168,54 @@ class WPStackPro {
 		// load other files
 		require_once( plugin_dir_path( __FILE__ ) . 'helper.php' );
 		require_once( plugin_dir_path( __FILE__ ) . 'includes/gumroad.php' );
+		require_once( plugin_dir_path( __FILE__ ) . 'includes/pager.php' );
+		require_once( plugin_dir_path( __FILE__ ) . 'includes/paypal.php' );
+	}
+
+	public function add_dashboard_widgets() {
+		wp_add_dashboard_widget(
+			'welcome',
+			apply_filters( 'wpstackpro_welcome_dashboard_heading', 'Welcome! 👋' ),
+			function() {
+				echo apply_filters( 'wpstackpro_welcome_dashboard_text', '<h2>Thank you for being a customer! 🙏</h2>' );
+			}
+		);
 	}
 
 	public function feature_tasting() {
-		if ( isset( $_REQUEST[ 'email' ] ) ) {
-			$email = urldecode( $_REQUEST[ 'email' ] );
-			if ( ! is_email( $email ) ) {
-				wp_redirect( '/' );
-				die();
-			}
-
-			$generated_password = wp_generate_password( 10, true, true );
-			$user_id            = wp_create_user( $email, $generated_password, $email );
-
-			if ( is_wp_error( $user_id ) ) {
-				wp_redirect( '/' );
-				die();
-			}
-
-			WPStackPro_Helper::send_generated_credentials_to_user_by_email( $user_id, $email, $generated_password );
-
-			wp_set_auth_cookie( $user_id, true );
-			wp_redirect( admin_url() );
-			die();
-
-		} else {
+		if ( ! isset( $_REQUEST[ 'email' ] ) ) {
 			wp_redirect( '/' );
 			die();
 		}
+
+		$email = $_REQUEST[ 'email' ];
+		if ( ! is_email( $email ) ) {
+			wp_redirect( '/' );
+			die();
+		}
+
+		// check for spam bot submission now
+		if ( $_REQUEST['bottle'] == 'wine' ) {
+			wp_redirect( admin_url() ); // mimicking the same behavior as of a legit request
+			die();
+		}
+
+		$user_id = WPStackPro_Helper::create_customer_account( $email );
+
+		if ( is_wp_error( $user_id ) ) {
+			if ( $user_id->get_error_code() == 'existing_user_login' ) {
+				$url = add_query_arg( 'ux-message', 'You already have an account with us. Please login instead.', home_url( 'wp-login.php' ) );
+				$url = add_query_arg( 'ux-email', $email, $url );
+				wp_redirect( $url );
+			} else {
+				wp_redirect( '/' );
+			}
+			die();
+		}
+
+		wp_set_auth_cookie( $user_id, true );
+		wp_redirect( admin_url() );
+		die();
 	}
 
 	public function friction_less_login_handler() {

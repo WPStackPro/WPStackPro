@@ -16,6 +16,18 @@ class WPStackPro_Helper {
 		return trim( $parseUrl[ 'host' ] ? $parseUrl[ 'host' ] : array_shift( explode( '/', $parseUrl[ 'path' ], 2 ) ) );
 	}
 
+	public static function create_customer_account( $email ) {
+		$username           = ( strlen( $email ) > 60 ) ? substr( $email, 0, 60 ) : $email;
+		$generated_password = wp_generate_password( 10, true, true );
+		$user_id            = wp_create_user( $username, $generated_password, $email );
+
+		if ( ! is_wp_error( $user_id ) ) {
+			WPStackPro_Helper::send_generated_credentials_to_user_by_email( $user_id, $email, $generated_password );
+		}
+
+		return $user_id;
+	}
+
 	/**
 	 * Function to generate a friction less login link for a user
 	 * The user clicks on this url, and they are auto-logged in
@@ -52,6 +64,25 @@ Ashfame";
 
 		$headers = array( 'Reply-To: Ashfame <mail@ashfame.com>' );
 		wp_mail( $email, get_bloginfo( 'name' ) . ' Account 💫', $email_body, $headers );
+	}
+
+	/**
+	 * Possible values of customer_designation
+	 * fresher -> rookie -> sponsor | defaulter
+	 *
+	 * Just signed up = fresher
+	 * Tried sending an alert = rookie
+	 * Paid to be a customer = sponsor
+	 * Non payment = defaulter
+	 *
+	 * @return bool
+	 */
+	public static function get_current_user_designation() {
+		global $current_user;
+
+		$customer_designation = get_user_meta( $current_user->ID, 'customer_designation', true );
+
+		return $customer_designation ? $customer_designation : 'fresher';
 	}
 }
 
