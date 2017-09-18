@@ -140,12 +140,13 @@ class WPStackPro_Paypal {
 	}
 
 	public function add_dashboard_widgets() {
-		if ( current_user_can( 'manage_options' ) ) {
+		$file_contents = trim( file_get_contents( dirname( ABSPATH ) . '/logs/paypal.log' ) );
+		if ( current_user_can( 'manage_options' ) && ! empty( $file_contents ) ) {
 			wp_add_dashboard_widget(
 				'paypal_log',
 				'Paypal Log',
-				function() {
-					echo implode( '<br/>', explode( PHP_EOL, file_get_contents( dirname( ABSPATH ) . '/logs/paypal.log' ) ) );
+				function( $file_contents ) {
+					echo implode( '<br/>', explode( PHP_EOL, $file_contents ) );
 				}
 			);
 		}
