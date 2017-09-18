@@ -4,7 +4,7 @@ Plugin Name: WPStackPro
 Plugin URI: https://wpstackpro.com
 Description: WordPress plugin that serves as a framework to quickly build products
 Author: Ashfame
-Version: 0.1.4
+Version: 0.1.5
 Author URI: https://ashfame.com/
 */
 

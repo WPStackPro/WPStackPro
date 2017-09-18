@@ -145,8 +145,8 @@ class WPStackPro_Paypal {
 			wp_add_dashboard_widget(
 				'paypal_log',
 				'Paypal Log',
-				function( $file_contents ) {
-					echo implode( '<br/>', explode( PHP_EOL, $file_contents ) );
+				function() {
+					echo implode( '<br/>', explode( PHP_EOL, file_get_contents( dirname( ABSPATH ) . '/logs/paypal.log' ) ) );
 				}
 			);
 		}
