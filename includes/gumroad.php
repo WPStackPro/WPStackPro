@@ -31,7 +31,7 @@ class WPStackPro_Gumroad {
 			// and we are sure email doesn't exist as a user already
 			if ( is_wp_error( $user_id ) ) {
 				WPStackPro_Pager::notify_me( 'Could not handle a Gumroad PING, check email' );
-				wp_mail( 'ashishsainiashfame@gmail.com', 'AlertYo', 'Could not handle this Gumroad PING' . PHP_EOL . print_r( $_REQUEST, true ) );
+				wp_mail( get_option( 'admin_email' ), 'AlertYo', 'Could not handle this Gumroad PING' . PHP_EOL . print_r( $_REQUEST, true ) );
 				return;
 			}
 		} else {

@@ -22,6 +22,9 @@ class WPStackPro_Helper {
 		$user_id            = wp_create_user( $username, $generated_password, $email );
 
 		if ( ! is_wp_error( $user_id ) ) {
+			// mark customer_designation
+			update_user_meta( $user_id, 'customer_designation', 'fresher' );
+
 			WPStackPro_Helper::send_generated_credentials_to_user_by_email( $user_id, $email, $generated_password );
 		}
 
@@ -57,13 +60,13 @@ Password: $generated_password
 
 Click this link to auto-login into your account - $friction_less_login_url
 
-If you have any questions, just reply to this email. My email is mail@ashfame.com
+If you have any questions, please login into your account & use the support option to reach out.
 
 Thank you!
-Ashfame";
+Ashfame
+Creator, " . get_option( 'blogname' );
 
-		$headers = array( 'Reply-To: Ashfame <mail@ashfame.com>' );
-		wp_mail( $email, get_bloginfo( 'name' ) . ' Account 💫', $email_body, $headers );
+		wp_mail( $email, get_bloginfo( 'name' ) . ' Account 💫', $email_body );
 	}
 
 	/**

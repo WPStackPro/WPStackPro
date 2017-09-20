@@ -3,7 +3,12 @@
 class WPStackPro_Pager {
 
 	public static function notify_me( $message ) {
-		$pager_id = get_option( 'wpstackpro_pager' ); // either email or webhook url
+		$pager_id = get_option( 'wpstackpro_pager' ); // either email or webhook url or empty
+
+		if ( empty( $pager_id ) ) {
+			return;
+		}
+
 		if ( is_email( $pager_id ) ) {
 			wp_mail( $pager_id, 'AlertYo', $message );
 		} else {

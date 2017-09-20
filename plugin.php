@@ -4,7 +4,7 @@ Plugin Name: WPStackPro
 Plugin URI: https://wpstackpro.com
 Description: WordPress plugin that serves as a framework to quickly build products
 Author: Ashfame
-Version: 0.1.5
+Version: 0.1.7
 Author URI: https://ashfame.com/
 */
 
@@ -162,22 +162,83 @@ class WPStackPro {
 		add_action( 'wp_dashboard_setup', array( $this, 'add_dashboard_widgets' ) );
 
 		// Ajax handlers
+		add_action( 'wp_ajax_support_widget_submission', array( $this, 'support_widget_submission_handler' ) );
+		add_action( 'wp_ajax_nopriv_support_widget_submission', array( $this, 'support_widget_submission_handler' ) );
 		add_action( 'wp_ajax_nopriv_feature_tasting', array( $this, 'feature_tasting' ) );
 		add_action( 'wp_ajax_nopriv_friction_less_login', array( $this, 'friction_less_login_handler' ) );
 
-		// load other files
+		// load integrations, if they are enabled
 		require_once( plugin_dir_path( __FILE__ ) . 'helper.php' );
-		require_once( plugin_dir_path( __FILE__ ) . 'includes/gumroad.php' );
-		require_once( plugin_dir_path( __FILE__ ) . 'includes/pager.php' );
-		require_once( plugin_dir_path( __FILE__ ) . 'includes/paypal.php' );
+		if ( get_option( 'wpstackpro_paddle_integration_enabled' ) ) {
+			require_once( plugin_dir_path( __FILE__ ) . 'includes/paddle.php' );
+		}
+		if ( get_option( 'wpstackpro_pager_integration_enabled' ) ) {
+			require_once( plugin_dir_path( __FILE__ ) . 'includes/pager.php' );
+		}
+		if ( get_option( 'wpstackpro_gumroad_integration_enabled' ) ) {
+			require_once( plugin_dir_path( __FILE__ ) . 'includes/gumroad.php' );
+		}
+		if ( get_option( 'wpstackpro_paypal_integration_enabled' ) ) {
+			require_once( plugin_dir_path( __FILE__ ) . 'includes/paypal.php' );
+		}
 	}
 
 	public function add_dashboard_widgets() {
 		wp_add_dashboard_widget(
 			'welcome',
-			apply_filters( 'wpstackpro_welcome_dashboard_heading', 'Welcome! 👋' ),
+			apply_filters( 'wpstackpro_welcome_dashboard_widget_heading', 'Welcome! 👋' ),
 			function() {
 				echo apply_filters( 'wpstackpro_welcome_dashboard_text', '<h2>Thank you for being a customer! 🙏</h2>' );
+			}
+		);
+
+		wp_add_dashboard_widget(
+			'support',
+			apply_filters( 'wpstackpro_support_dashboard_widget_heading', '🛎 Support' ),
+			function() {
+				?>
+				<p>Need help with anything? Just ask!</p>
+				<form id="supportbox">
+					<textarea class="large-text" name="request" rows="7" placeholder="I need help on.."></textarea>
+					<input type="hidden" name="action" value="support_widget_submission"/>
+					<input type="submit" class="button button-primary"/>
+				</form>
+				<script>
+					(function( $ ) {
+						$( document ).ready( function() {
+							$( '#supportbox' ).submit( function() {
+								var $form = $( this );
+								if ( !$.trim( $form.find( 'textarea[name=request]' ).val() ) ) {
+									alert( 'Please enter your support request before submitting the form.' );
+									return false;
+								}
+								$form.find( 'input[type=submit]' ).val( 'Sending..' );
+								$.ajax( {
+									url: window.ajaxurl,
+									data: $form.serialize(),
+									method: 'POST',
+									dataType: 'JSON'
+								} ).done( function( response ) {
+									console.log( response );
+									if ( response.success ) {
+										$form.find( 'input[type=submit]' ).val( 'Sent!' );
+										alert( 'Thanks for reaching out! We will revert at the earliest.' );
+										setTimeout( function() {
+											$form.find( 'input[type=submit]' ).val( 'Submit' );
+											$form.find( 'textarea[name=request]' ).val( '' );
+										}, 2000 );
+									}
+								} ).fail( function( response ) {
+									console.log( response );
+									alert( 'Something went wrong! Please try again.' );
+									$form.find( 'input[type=submit]' ).val( 'Submit' );
+								} );
+								return false;
+							} );
+						} );
+					})( jQuery );
+				</script>
+				<?php
 			}
 		);
 	}
@@ -195,7 +256,7 @@ class WPStackPro {
 		}
 
 		// check for spam bot submission now
-		if ( $_REQUEST['bottle'] == 'wine' ) {
+		if ( $_REQUEST[ 'bottle' ] == 'wine' ) {
 			wp_redirect( admin_url() ); // mimicking the same behavior as of a legit request
 			die();
 		}
@@ -232,6 +293,21 @@ class WPStackPro {
 
 		wp_redirect( admin_url() );
 		die();
+	}
+
+	public function support_widget_submission_handler() {
+		global $current_user;
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'reason' => 'You need to be logged in to submit a support request' ) );
+		}
+
+		$headers = array( 'Reply-To: ' . $current_user->first_name . ' <' . $current_user->user_email . '>' );
+
+		$email_body = $current_user->user_email . ' ' . $current_user->first_name . ' ' . '(User ID - ' . $current_user->ID . ')' . PHP_EOL . PHP_EOL . $_REQUEST[ 'request' ];
+		wp_mail( get_option( 'wpstackpro_support_email' ), get_option( 'blogname' ) . ' Support Request', $email_body, $headers );
+
+		wp_send_json_success();
 	}
 }
 
