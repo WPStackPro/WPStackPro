@@ -4,7 +4,7 @@ Plugin Name: WPStackPro
 Plugin URI: https://wpstackpro.com
 Description: WordPress plugin that serves as a framework to quickly build products
 Author: Ashfame
-Version: 0.1.7
+Version: 0.1.8
 Author URI: https://ashfame.com/
 */
 
@@ -165,7 +165,9 @@ class WPStackPro {
 		add_action( 'wp_ajax_support_widget_submission', array( $this, 'support_widget_submission_handler' ) );
 		add_action( 'wp_ajax_nopriv_support_widget_submission', array( $this, 'support_widget_submission_handler' ) );
 		add_action( 'wp_ajax_nopriv_feature_tasting', array( $this, 'feature_tasting' ) );
+		add_action( 'wp_ajax_feature_tasting', array( $this, 'feature_tasting' ) );
 		add_action( 'wp_ajax_nopriv_friction_less_login', array( $this, 'friction_less_login_handler' ) );
+		add_action( 'wp_ajax_friction_less_login', array( $this, 'friction_less_login_handler' ) );
 
 		// load integrations, if they are enabled
 		require_once( plugin_dir_path( __FILE__ ) . 'helper.php' );
@@ -244,6 +246,11 @@ class WPStackPro {
 	}
 
 	public function feature_tasting() {
+		if ( is_user_logged_in() ) {
+			wp_redirect( admin_url() );
+			die();
+		}
+
 		if ( ! isset( $_REQUEST[ 'email' ] ) ) {
 			wp_redirect( '/' );
 			die();
@@ -281,6 +288,11 @@ class WPStackPro {
 
 	public function friction_less_login_handler() {
 		global $wpdb;
+
+		if ( is_user_logged_in() ) {
+			wp_redirect( admin_url() );
+			die();
+		}
 
 		$token = urldecode( $_REQUEST[ 'token' ] );
 
