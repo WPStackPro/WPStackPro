@@ -4,7 +4,7 @@ Plugin Name: WPStackPro
 Plugin URI: https://wpstackpro.com
 Description: WordPress plugin that serves as a framework to quickly build products
 Author: Ashfame
-Version: 0.1.8
+Version: 0.1.9
 Author URI: https://ashfame.com/
 */
 
@@ -15,6 +15,10 @@ class WPStackPro {
 		add_filter( 'login_headerurl', function( $url ) {
 			return home_url();
 		} );
+
+		add_filter( 'login_headertitle', function() {
+			return get_bloginfo( 'name' );
+		});
 
 		// Replace logo with just site name on login page
 		add_action( 'login_enqueue_scripts', function() {
