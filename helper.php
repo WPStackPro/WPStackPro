@@ -13,10 +13,10 @@ class WPStackPro_Helper {
 	public static function get_host( $url ) {
 		$parseUrl = parse_url( trim( $url ) );
 
-		return trim( $parseUrl[ 'host' ] ? $parseUrl[ 'host' ] : array_shift( explode( '/', $parseUrl[ 'path' ], 2 ) ) );
+		return trim( ! empty( $parseUrl[ 'host' ] ) ? $parseUrl[ 'host' ] : array_shift( explode( '/', $parseUrl[ 'path' ], 2 ) ) );
 	}
 
-	public static function create_customer_account( $email ) {
+	public static function create_customer_account( $email, $send_email = true ) {
 		$username           = ( strlen( $email ) > 60 ) ? substr( $email, 0, 60 ) : $email;
 		$generated_password = wp_generate_password( 10, true, true );
 		$user_id            = wp_create_user( $username, $generated_password, $email );
@@ -25,7 +25,9 @@ class WPStackPro_Helper {
 			// mark customer_designation
 			update_user_meta( $user_id, 'customer_designation', 'fresher' );
 
-			WPStackPro_Helper::send_generated_credentials_to_user_by_email( $user_id, $email, $generated_password );
+			if ( $send_email ) {
+				WPStackPro_Helper::send_generated_credentials_to_user_by_email( $user_id, $email, $generated_password );
+			}
 		}
 
 		return $user_id;
@@ -83,7 +85,11 @@ Creator, " . get_option( 'blogname' );
 	public static function get_current_user_designation() {
 		global $current_user;
 
-		$customer_designation = get_user_meta( $current_user->ID, 'customer_designation', true );
+		return self::get_user_designation( $current_user->ID );
+	}
+
+	public static function get_user_designation( $user_id ) {
+		$customer_designation = get_user_meta( $user_id, 'customer_designation', true );
 
 		return $customer_designation ? $customer_designation : 'fresher';
 	}

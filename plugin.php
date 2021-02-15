@@ -4,7 +4,7 @@ Plugin Name: WPStackPro
 Plugin URI: https://wpstackpro.com
 Description: WordPress plugin that serves as a framework to quickly build products
 Author: Ashfame
-Version: 0.1.9
+Version: 0.2-dev
 Author URI: https://ashfame.com/
 */
 
@@ -51,22 +51,22 @@ class WPStackPro {
 			<?php
 		} );
 
-		// remove screen options & contextual help links
-		add_filter( 'screen_options_show_screen', '__return_false' );
-		add_filter( 'contextual_help', function( $old_help, $screen_id, $screen ) {
-			$screen->remove_help_tabs();
-
-			return $old_help;
-		}, 999, 3 );
-
 		// remove footer text in admin
 		add_filter( 'admin_footer_text', '__return_empty_string', 11 );
 		add_filter( 'update_footer', '__return_empty_string', 11 );
 
-		// remove admin color scheme options from non-admin users
 		add_action( 'init', function() {
 			if ( ! current_user_can( 'manage_options' ) ) {
+				// remove admin color scheme options from non-admin users
 				remove_action( 'admin_color_scheme_picker', 'admin_color_scheme_picker' );
+
+				// remove screen options & contextual help links
+				add_filter( 'screen_options_show_screen', '__return_false' );
+				add_filter( 'contextual_help', function( $old_help, $screen_id, $screen ) {
+					$screen->remove_help_tabs();
+
+					return $old_help;
+				}, 999, 3 );
 			}
 		} );
 
@@ -119,7 +119,7 @@ class WPStackPro {
 
 		// redirect 404 back to homepage
 		add_action( 'template_redirect', function() {
-			if ( is_404() ) {
+			if ( get_option( 'wpstackpro_redirect_non_homepage_requests_to_homepage', false ) && is_404() ) {
 				wp_redirect( '/', 302 );
 			}
 		} );

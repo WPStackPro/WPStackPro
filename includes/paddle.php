@@ -6,6 +6,18 @@ class WPStackPro_Paddle {
 		add_action( 'wp_ajax_nopriv_paddle_webhook', array( $this, 'paddle_webhook_handler' ) );
 	}
 
+	public static function render_subscription_purchase_button( $plan_id, $user_email = '' ) {
+		if ( ! $plan_id ) {
+			return;
+		}
+		?>
+		<script src="https://cdn.paddle.com/paddle/paddle.js"></script>
+		<script type="text/javascript"> Paddle.Setup( { vendor: 21187 } ); </script>
+		<a href="#!" class="paddle_button" data-product="<?php echo $plan_id ?>" data-email="<?php echo $user_email; ?>"
+		   data-success="<?php echo admin_url( '', 'https' ) ?>">Buy Now!</a>
+		<?php
+	}
+
 	public function verify_signature() {
 		// Paddle 'Public Key'
 		$public_key = get_option( 'paddle_public_key' );
